@@ -10,15 +10,22 @@ interface Book {
   author: string;
   cover: string;
   reviews: any[];
+  isbn?: string; // Make isbn optional to maintain compatibility
 }
 
 interface BookListProps {
   books?: Book[];
   title?: string;
   loading?: boolean;
+  onBookClick?: (book: Book) => void; // Add this prop to the interface
 }
 
-const BookList: React.FC<BookListProps> = ({ books: propBooks, title = "All Books", loading: propLoading }) => {
+const BookList: React.FC<BookListProps> = ({ 
+  books: propBooks, 
+  title = "All Books", 
+  loading: propLoading,
+  onBookClick 
+}) => {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(propLoading !== undefined ? propLoading : true);
 
@@ -44,6 +51,13 @@ const BookList: React.FC<BookListProps> = ({ books: propBooks, title = "All Book
     fetchBooks();
   }, [propBooks]);
 
+  // Handle book click with optional callback
+  const handleBookClick = (book: Book) => {
+    if (onBookClick) {
+      onBookClick(book);
+    }
+  };
+
   return (
     <div className="w-full">
       <h2 className="text-2xl font-semibold mb-6">{title}</h2>
@@ -68,6 +82,7 @@ const BookList: React.FC<BookListProps> = ({ books: propBooks, title = "All Book
               author={book.author}
               cover={book.cover}
               reviews={book.reviews}
+              onClick={() => handleBookClick(book)}
             />
           ))}
         </div>
