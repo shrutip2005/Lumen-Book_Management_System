@@ -1,137 +1,102 @@
 
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import SearchBar from '../components/SearchBar';
 import BookList from '../components/BookList';
-import { 
-  getBooksByTitle, 
-  getBooksByAuthor, 
-  getBookByISBN,
-  searchByISBN,
-  searchByAuthor,
-  searchByTitle
-} from '../utils/api';
+import { searchByTitle, searchByAuthor, searchByISBN } from '../utils/api';
 import { toast } from 'sonner';
 
-type SearchType = 'title' | 'author' | 'isbn';
-
-// Define a Book interface to ensure proper typing
 interface Book {
   id: string;
-  isbn: string;
   title: string;
   author: string;
-  description: string;
   cover: string;
   reviews: any[];
 }
 
-const SearchPage = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [searchResults, setSearchResults] = useState<Book[]>([]);
+const SearchPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
+  const initialType = (searchParams.get('type') as 'title' | 'author' | 'isbn') || 'title';
+  
+  const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [hasSearched, setHasSearched] = useState<boolean>(false);
-
-  // Parse search params from URL
-  const searchParams = new URLSearchParams(location.search);
-  const queryParam = searchParams.get('q') || '';
-  const typeParam = searchParams.get('type') as SearchType || 'title';
-
+  const [searchPerformed, setSearchPerformed] = useState<boolean>(false);
+  
+  // Perform search when URL parameters change
   useEffect(() => {
-    // If URL has search parameters, perform search
-    if (queryParam) {
-      performSearch(queryParam, typeParam);
+    if (initialQuery) {
+      performSearch(initialQuery, initialType);
     }
-  }, [queryParam, typeParam]);
-
-  const performSearch = async (query: string, type: SearchType) => {
-    if (!query.trim()) return;
-    
+  }, [initialQuery, initialType]);
+  
+  const performSearch = async (query: string, type: 'title' | 'author' | 'isbn') => {
     setLoading(true);
-    setHasSearched(true);
+    setSearchPerformed(true);
     
     try {
-      let results: Book[] = [];
+      let results;
       
-      switch (type) {
-        case 'title':
-          results = await searchByTitle(query) as Book[];
-          break;
-        case 'author':
-          results = await searchByAuthor(query) as Book[];
-          break;
-        case 'isbn':
-          // For ISBN searches, directly use getBookByISBN which is more specific
-          try {
-            const book = await getBookByISBN(query) as Book;
-            if (book) {
-              navigate(`/book/${book.isbn}`);
-              return;
-            }
-          } catch (error) {
-            console.error('ISBN search error:', error);
-            toast.error('Book with this ISBN not found');
-            results = [];
-          }
-          break;
-        default:
-          results = await searchByTitle(query) as Book[];
+      if (type === 'title') {
+        results = await searchByTitle(query);
+      } else if (type === 'author') {
+        results = await searchByAuthor(query);
+      } else if (type === 'isbn') {
+        // For ISBN search, use the Promise-based approach
+        results = await searchByISBN(query)
+          .then(book => (book ? [book] : []))
+          .catch(error => {
+            console.error('Error searching by ISBN:', error);
+            return [];
+          });
+      } else {
+        results = [];
       }
       
-      setSearchResults(Array.isArray(results) ? results : [results].filter(Boolean));
+      setBooks(results as Book[]);
     } catch (error) {
       console.error('Search error:', error);
       toast.error('Failed to perform search');
-      setSearchResults([]);
+      setBooks([]);
     } finally {
       setLoading(false);
     }
   };
-
-  const handleSearch = (query: string, type: SearchType) => {
-    // Update URL with search params
-    const searchParams = new URLSearchParams();
-    searchParams.set('q', query);
-    searchParams.set('type', type);
+  
+  const handleSearch = (query: string, type: 'title' | 'author' | 'isbn') => {
+    // Update URL parameters
+    setSearchParams({ q: query, type });
     
-    // Only update URL, let the useEffect handle the search
-    navigate(`/search?${searchParams.toString()}`, { replace: true });
+    // Perform the search
+    performSearch(query, type);
   };
-
+  
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
       
-      <main className="pt-24 px-6 max-w-7xl mx-auto flex-grow">
-        <div className="py-12">
-          <h1 className="text-3xl font-semibold mb-8 text-center">Search Books</h1>
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto mb-8">
+          <h1 className="text-3xl font-bold mb-6">Search Books</h1>
           
           <SearchBar 
             onSearch={handleSearch}
-            initialQuery={queryParam}
-            initialType={typeParam}
-            className="mb-12"
+            initialQuery={initialQuery}
+            initialType={initialType}
           />
-          
-          {hasSearched && (
-            <div className="animate-fade-in">
-              <BookList 
-                books={searchResults} 
-                title={`${searchResults.length} ${searchResults.length === 1 ? 'result' : 'results'} found`}
-                loading={loading}
-              />
-            </div>
-          )}
-          
-          {!hasSearched && (
-            <div className="text-center py-12 text-muted-foreground animate-fade-in">
-              <p>Search for books by title, author, or ISBN</p>
-            </div>
-          )}
         </div>
+        
+        {searchPerformed && (
+          <div className="max-w-7xl mx-auto">
+            <BookList
+              books={books}
+              title={`Search Results ${initialQuery ? `for "${initialQuery}"` : ''}`}
+              loading={loading}
+            />
+          </div>
+        )}
       </main>
       
       <Footer />

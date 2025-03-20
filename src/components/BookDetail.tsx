@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getBookByISBN, getBookReviews } from '../utils/api';
+import { getBookByISBN, getBookReviews, searchByISBN } from '../utils/api';
 import { Star, Calendar, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -44,17 +44,15 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
     const fetchBookAndReviews = async () => {
       try {
         setLoading(true);
-        const bookData = await getBookByISBN(bookId) as Book;
         
-        if (bookData) {
+        try {
+          const bookData = await getBookByISBN(bookId) as Book;
           setBook(bookData);
           
-          // Fetch reviews separately
           setReviewsLoading(true);
           try {
             const reviewsData = await getBookReviews(bookData.id) as Review[];
             setReviews(reviewsData || []);
-            // Update the book object with the reviews array
             setBook(prev => prev ? { ...prev, reviews: reviewsData || [] } : null);
           } catch (reviewError) {
             console.error('Error fetching reviews:', reviewError);
@@ -63,6 +61,27 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
           } finally {
             setReviewsLoading(false);
           }
+        } catch (error) {
+          console.log('Direct lookup failed, trying Promise-based search');
+          searchByISBN(bookId)
+            .then(bookData => {
+              setBook(bookData as Book);
+              
+              setReviewsLoading(true);
+              return getBookReviews((bookData as Book).id);
+            })
+            .then(reviewsData => {
+              setReviews(reviewsData as Review[] || []);
+              setBook(prev => prev ? { ...prev, reviews: reviewsData as Review[] || [] } : null);
+            })
+            .catch(searchError => {
+              console.error('Error with Promise-based search:', searchError);
+              toast.error('Book not found');
+              setBook(null);
+            })
+            .finally(() => {
+              setReviewsLoading(false);
+            });
         }
       } catch (error) {
         console.error('Error fetching book details:', error);
@@ -88,11 +107,9 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
     try {
       await deleteReview(book.id, reviewId, user.id);
       
-      // Update the reviews and book state
       const updatedReviews = reviews.filter(r => r.id !== reviewId);
       setReviews(updatedReviews);
       
-      // Also update the book object with the filtered reviews
       setBook({
         ...book,
         reviews: updatedReviews
@@ -110,17 +127,14 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
     
     let updatedReviews;
     
-    // If editing, replace the existing review
     if (editingReview) {
       updatedReviews = reviews.map(r => 
         r.id === newReview.id ? newReview : r
       );
     } else {
-      // Add new review
       updatedReviews = [...reviews, newReview];
     }
     
-    // Update both the reviews array and the book object
     setReviews(updatedReviews);
     setBook({
       ...book,
@@ -130,7 +144,6 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
     setShowReviewForm(false);
     setEditingReview(null);
     
-    // Show success message
     toast.success(editingReview ? 'Review updated successfully' : 'Review added successfully');
   };
 

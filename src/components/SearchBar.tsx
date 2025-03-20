@@ -12,7 +12,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { getBookByISBN } from '../utils/api';
+import { searchByISBN } from '../utils/api';
 
 type SearchType = 'title' | 'author' | 'isbn';
 
@@ -45,27 +45,31 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setIsSearching(true);
     
     try {
-      // For ISBN searches, try direct lookup first
+      // For ISBN searches, use the Promise-based searchByISBN function
       if (searchType === 'isbn') {
         const cleanedISBN = query.trim().replace(/-/g, '');
         
         // Basic ISBN validation - check if it's a 10 or 13 digit number
         if (/^\d{10}$|^\d{13}$/.test(cleanedISBN)) {
-          try {
-            const book = await getBookByISBN(cleanedISBN);
-            if (book) {
-              navigate(`/book/${cleanedISBN}`);
+          searchByISBN(cleanedISBN)
+            .then(book => {
+              if (book) {
+                navigate(`/book/${cleanedISBN}`);
+              }
+            })
+            .catch(error => {
+              console.error('ISBN search failed:', error);
+              // Continue to search page if direct lookup fails
+              onSearch(query, searchType);
+            })
+            .finally(() => {
               setIsSearching(false);
-              return;
-            }
-          } catch (error) {
-            console.error('ISBN direct lookup failed, falling back to search:', error);
-            // Continue to search page if direct lookup fails
-          }
+            });
+          return; // Return early as we're handling this case with Promises
         }
       }
       
-      // For other searches or if ISBN direct lookup failed
+      // For other searches or if ISBN validation failed
       onSearch(query, searchType);
     } catch (error) {
       console.error('Search error:', error);
