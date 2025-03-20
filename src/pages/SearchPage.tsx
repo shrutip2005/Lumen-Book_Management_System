@@ -8,7 +8,10 @@ import BookList from '../components/BookList';
 import { 
   getBooksByTitle, 
   getBooksByAuthor, 
-  getBookByISBN 
+  getBookByISBN,
+  searchByISBN,
+  searchByAuthor,
+  searchByTitle
 } from '../utils/api';
 import { toast } from 'sonner';
 
@@ -44,21 +47,28 @@ const SearchPage = () => {
       
       switch (type) {
         case 'title':
-          results = await getBooksByTitle(query);
+          results = await searchByTitle(query);
           break;
         case 'author':
-          results = await getBooksByAuthor(query);
+          results = await searchByAuthor(query);
           break;
         case 'isbn':
           try {
-            const book = await getBookByISBN(query);
+            // For ISBN searches, try to get the exact book
+            const book = await searchByISBN(query);
+            // If successful and it returned a book, redirect to book details
+            if (book) {
+              navigate(`/book/${book.isbn}`);
+              return;
+            }
             results = book ? [book] : [];
           } catch (error) {
+            console.error('ISBN search error:', error);
             results = [];
           }
           break;
         default:
-          results = await getBooksByTitle(query);
+          results = await searchByTitle(query);
       }
       
       setSearchResults(Array.isArray(results) ? results : [results].filter(Boolean));

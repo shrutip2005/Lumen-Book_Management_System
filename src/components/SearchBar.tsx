@@ -36,7 +36,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
     if (query.trim()) {
       onSearch(query, searchType);
       
-      // Update URL with search params
+      // For ISBN searches, if it's a valid ISBN, go directly to the book details page
+      if (searchType === 'isbn') {
+        const cleanedISBN = query.trim().replace(/-/g, '');
+        // Basic ISBN validation - check if it's a 10 or 13 digit number
+        if (/^\d{10}$|^\d{13}$/.test(cleanedISBN)) {
+          navigate(`/book/${cleanedISBN}`);
+          return;
+        }
+      }
+      
+      // For other searches or invalid ISBNs, go to search results page
       navigate(`/search?q=${encodeURIComponent(query)}&type=${searchType}`);
     }
   };

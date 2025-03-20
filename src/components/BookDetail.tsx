@@ -35,8 +35,9 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
     const fetchBookAndReviews = async () => {
       try {
         setLoading(true);
-        const bookData = await getBookByISBN(bookId);
-        setBook(bookData as Book);
+        // Explicitly cast the response to Book type
+        const bookData = await getBookByISBN(bookId) as Book;
+        setBook(bookData);
         
         // Fetch reviews separately using the getBookReviews function
         if (bookData) {
