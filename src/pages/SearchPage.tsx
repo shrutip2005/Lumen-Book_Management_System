@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import SearchBar from '../components/SearchBar';
@@ -13,6 +13,7 @@ interface Book {
   title: string;
   author: string;
   cover: string;
+  isbn: string;
   reviews: any[];
 }
 
@@ -24,6 +25,7 @@ const SearchPage: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchPerformed, setSearchPerformed] = useState<boolean>(false);
+  const navigate = useNavigate();
   
   // Perform search when URL parameters change
   useEffect(() => {
@@ -72,6 +74,10 @@ const SearchPage: React.FC = () => {
     // Perform the search
     performSearch(query, type);
   };
+
+  const handleBookClick = (book: Book) => {
+    navigate(`/book/${book.isbn}`);
+  };
   
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -94,6 +100,7 @@ const SearchPage: React.FC = () => {
               books={books}
               title={`Search Results ${initialQuery ? `for "${initialQuery}"` : ''}`}
               loading={loading}
+              onBookClick={handleBookClick}
             />
           </div>
         )}
