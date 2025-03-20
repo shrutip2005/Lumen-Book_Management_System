@@ -64,17 +64,16 @@ const SearchPage = () => {
           results = await searchByAuthor(query) as Book[];
           break;
         case 'isbn':
+          // For ISBN searches, directly use getBookByISBN which is more specific
           try {
-            // For ISBN searches, try to get the exact book
-            const book = await searchByISBN(query) as Book;
-            // If successful and it returned a book, redirect to book details
+            const book = await getBookByISBN(query) as Book;
             if (book) {
               navigate(`/book/${book.isbn}`);
               return;
             }
-            results = book ? [book] : [];
           } catch (error) {
             console.error('ISBN search error:', error);
+            toast.error('Book with this ISBN not found');
             results = [];
           }
           break;
@@ -93,7 +92,13 @@ const SearchPage = () => {
   };
 
   const handleSearch = (query: string, type: SearchType) => {
-    performSearch(query, type);
+    // Update URL with search params
+    const searchParams = new URLSearchParams();
+    searchParams.set('q', query);
+    searchParams.set('type', type);
+    
+    // Only update URL, let the useEffect handle the search
+    navigate(`/search?${searchParams.toString()}`, { replace: true });
   };
 
   return (

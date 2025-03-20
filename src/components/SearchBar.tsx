@@ -11,6 +11,8 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { getBookByISBN } from '../utils/api';
 
 type SearchType = 'title' | 'author' | 'isbn';
 
@@ -29,25 +31,45 @@ const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
   const [query, setQuery] = useState(initialQuery);
   const [searchType, setSearchType] = useState<SearchType>(initialType);
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      onSearch(query, searchType);
-      
-      // For ISBN searches, if it's a valid ISBN, go directly to the book details page
+    
+    if (!query.trim()) {
+      toast.error('Please enter a search term');
+      return;
+    }
+
+    setIsSearching(true);
+    
+    try {
+      // For ISBN searches, try direct lookup first
       if (searchType === 'isbn') {
         const cleanedISBN = query.trim().replace(/-/g, '');
+        
         // Basic ISBN validation - check if it's a 10 or 13 digit number
         if (/^\d{10}$|^\d{13}$/.test(cleanedISBN)) {
-          navigate(`/book/${cleanedISBN}`);
-          return;
+          try {
+            const book = await getBookByISBN(cleanedISBN);
+            if (book) {
+              navigate(`/book/${cleanedISBN}`);
+              return;
+            }
+          } catch (error) {
+            console.log('ISBN direct lookup failed, falling back to search');
+            // Continue to search page if direct lookup fails
+          }
         }
       }
       
-      // For other searches or invalid ISBNs, go to search results page
-      navigate(`/search?q=${encodeURIComponent(query)}&type=${searchType}`);
+      // For other searches or if ISBN direct lookup failed
+      onSearch(query, searchType);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -78,8 +100,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
         </SelectContent>
       </Select>
       
-      <Button type="submit" className="w-full md:w-auto">
-        Search
+      <Button 
+        type="submit" 
+        className="w-full md:w-auto"
+        disabled={isSearching}
+      >
+        {isSearching ? 'Searching...' : 'Search'}
       </Button>
     </form>
   );

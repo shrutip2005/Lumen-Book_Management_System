@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getBookByISBN, getBookReviews } from '../utils/api';
 import { Star, Calendar, BookOpen } from 'lucide-react';
@@ -9,6 +8,15 @@ import ReviewForm from './ReviewForm';
 import { toast } from 'sonner';
 import { deleteReview } from '../utils/api';
 
+interface Review {
+  id: string;
+  userId: string;
+  username: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
 interface Book {
   id: string;
   isbn: string;
@@ -16,7 +24,7 @@ interface Book {
   author: string;
   description: string;
   cover: string;
-  reviews: any[];
+  reviews: Review[];
 }
 
 interface BookDetailProps {
@@ -26,39 +34,50 @@ interface BookDetailProps {
 const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
   const { user, isAuthenticated } = useAuth();
   const [book, setBook] = useState<Book | null>(null);
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [reviewsLoading, setReviewsLoading] = useState<boolean>(false);
   const [showReviewForm, setShowReviewForm] = useState<boolean>(false);
-  const [editingReview, setEditingReview] = useState<any>(null);
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
 
   useEffect(() => {
     const fetchBookAndReviews = async () => {
       try {
         setLoading(true);
-        // Explicitly cast the response to Book type
         const bookData = await getBookByISBN(bookId) as Book;
-        setBook(bookData);
         
-        // Fetch reviews separately using the getBookReviews function
         if (bookData) {
-          const reviewsData = await getBookReviews(bookData.id);
-          setReviews(reviewsData as any[]);
+          setBook(bookData);
           
-          // Update the book object with the reviews array
-          setBook(prev => prev ? { ...prev, reviews: reviewsData as any[] } : null);
+          // Fetch reviews separately
+          setReviewsLoading(true);
+          try {
+            const reviewsData = await getBookReviews(bookData.id) as Review[];
+            setReviews(reviewsData || []);
+            // Update the book object with the reviews array
+            setBook(prev => prev ? { ...prev, reviews: reviewsData || [] } : null);
+          } catch (reviewError) {
+            console.error('Error fetching reviews:', reviewError);
+            toast.error('Unable to load reviews');
+            setReviews([]);
+          } finally {
+            setReviewsLoading(false);
+          }
         }
       } catch (error) {
-        console.error('Error fetching book or reviews:', error);
-        toast.error('Failed to load book details or reviews');
+        console.error('Error fetching book details:', error);
+        toast.error('Failed to load book details');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBookAndReviews();
+    if (bookId) {
+      fetchBookAndReviews();
+    }
   }, [bookId]);
 
-  const handleEditReview = (review: any) => {
+  const handleEditReview = (review: Review) => {
     setEditingReview(review);
     setShowReviewForm(true);
   };
@@ -86,7 +105,7 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
     }
   };
 
-  const onReviewSubmitted = (newReview: any) => {
+  const onReviewSubmitted = (newReview: Review) => {
     if (!book) return;
     
     let updatedReviews;
@@ -110,6 +129,9 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
     
     setShowReviewForm(false);
     setEditingReview(null);
+    
+    // Show success message
+    toast.success(editingReview ? 'Review updated successfully' : 'Review added successfully');
   };
 
   if (loading) {
@@ -136,12 +158,11 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
     return (
       <div className="max-w-4xl mx-auto pt-24 px-6 text-center py-12">
         <h2 className="text-2xl font-semibold mb-4">Book Not Found</h2>
-        <p className="text-muted-foreground">The book you're looking for doesn't exist.</p>
+        <p className="text-muted-foreground">The book you're looking for doesn't exist or has been removed.</p>
       </div>
     );
   }
 
-  // Calculate average rating
   const avgRating = reviews.length
     ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length
     : 0;
@@ -149,7 +170,6 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
   return (
     <div className="max-w-4xl mx-auto pt-24 px-6 pb-16 animate-fade-in">
       <div className="flex flex-col md:flex-row gap-8 mb-12">
-        {/* Book cover */}
         <div className="w-full md:w-1/3">
           <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-lg">
             <img 
@@ -160,7 +180,6 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
           </div>
         </div>
         
-        {/* Book details */}
         <div className="w-full md:w-2/3">
           <h1 className="text-3xl font-semibold mb-2">{book?.title}</h1>
           <p className="text-xl text-muted-foreground mb-4">{book?.author}</p>
@@ -211,11 +230,15 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
         </div>
       </div>
       
-      {/* Reviews section */}
       <div className="border-t border-border pt-8">
         <h2 className="text-2xl font-semibold mb-6">Reviews</h2>
         
-        {reviews.length > 0 ? (
+        {reviewsLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-24 w-full rounded-lg" />
+            <Skeleton className="h-24 w-full rounded-lg" />
+          </div>
+        ) : reviews.length > 0 ? (
           <div className="space-y-8">
             {reviews.map((review) => (
               <div key={review.id} className="border border-border rounded-lg p-6">
@@ -242,7 +265,6 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
                     </div>
                   </div>
                   
-                  {/* Edit/Delete buttons for user's own reviews */}
                   {isAuthenticated && user?.id === review.userId && (
                     <div className="flex space-x-2">
                       <Button 
@@ -273,7 +295,7 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
             
             {!isAuthenticated && (
               <p className="text-sm mt-2">
-                <a href="/login" className="text-book hover:underline">
+                <a href="/login" className="text-primary hover:underline">
                   Login
                 </a> to write a review.
               </p>
