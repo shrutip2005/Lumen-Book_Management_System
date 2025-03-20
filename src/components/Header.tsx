@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +19,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const { user, logout, isAuthenticated } = useAuth();
 
   useEffect(() => {

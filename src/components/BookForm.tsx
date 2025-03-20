@@ -101,9 +101,13 @@ const BookForm: React.FC<BookFormProps> = ({ onSuccess, book }) => {
         await updateBook(book.id, user.id, data);
         toast.success('Book updated successfully');
       } else {
-        // Add new book
+        // Add new book - ensure all required properties are present
         await addBook({
-          ...data,
+          title: data.title,
+          author: data.author,
+          isbn: data.isbn,
+          description: data.description,
+          cover: data.cover,
           createdBy: user.id,
         });
         toast.success('Book added successfully');
