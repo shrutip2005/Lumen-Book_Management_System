@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import SearchBar from '../components/SearchBar';
 import BookList from '../components/BookList';
 import { 
@@ -75,10 +76,10 @@ const SearchPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
       
-      <main className="pt-24 px-6 max-w-7xl mx-auto">
+      <main className="pt-24 px-6 max-w-7xl mx-auto flex-grow">
         <div className="py-12">
           <h1 className="text-3xl font-semibold mb-8 text-center">Search Books</h1>
           
@@ -106,6 +107,8 @@ const SearchPage = () => {
           )}
         </div>
       </main>
+      
+      <Footer />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import React from 'react';
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import { Button } from '@/components/ui/button';
 import { BookX } from 'lucide-react';
 
@@ -17,10 +18,10 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
       
-      <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="flex items-center justify-center p-6 flex-grow">
         <div className="text-center max-w-md animate-fade-in">
           <BookX className="h-16 w-16 mx-auto mb-6 text-muted-foreground" />
           <h1 className="text-4xl font-bold mb-4">404</h1>
@@ -32,6 +33,8 @@ const NotFound = () => {
           </Link>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

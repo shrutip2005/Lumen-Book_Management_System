@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,10 +59,10 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
       
-      <main className="pt-24 px-6 max-w-7xl mx-auto">
+      <main className="pt-24 px-6 max-w-7xl mx-auto flex-grow">
         <div className="py-12">
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-4">
@@ -177,6 +178,8 @@ const ProfilePage = () => {
           </div>
         </div>
       </main>
+      
+      <Footer />
     </div>
   );
 };

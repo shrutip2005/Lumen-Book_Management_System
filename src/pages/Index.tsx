@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import BookList from '../components/BookList';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -19,10 +20,10 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
       
-      <main className="pt-24">
+      <main className="pt-24 flex-grow">
         {/* Hero section */}
         <section className="px-6 py-16 md:py-24 max-w-7xl mx-auto">
           <div className={`max-w-3xl mx-auto text-center transition-opacity duration-700 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
@@ -48,6 +49,8 @@ const Index = () => {
           </div>
         </section>
       </main>
+      
+      <Footer />
     </div>
   );
 };
