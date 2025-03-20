@@ -17,10 +17,21 @@ import { toast } from 'sonner';
 
 type SearchType = 'title' | 'author' | 'isbn';
 
+// Define a Book interface to ensure proper typing
+interface Book {
+  id: string;
+  isbn: string;
+  title: string;
+  author: string;
+  description: string;
+  cover: string;
+  reviews: any[];
+}
+
 const SearchPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [hasSearched, setHasSearched] = useState<boolean>(false);
 
@@ -43,19 +54,19 @@ const SearchPage = () => {
     setHasSearched(true);
     
     try {
-      let results;
+      let results: Book[] = [];
       
       switch (type) {
         case 'title':
-          results = await searchByTitle(query);
+          results = await searchByTitle(query) as Book[];
           break;
         case 'author':
-          results = await searchByAuthor(query);
+          results = await searchByAuthor(query) as Book[];
           break;
         case 'isbn':
           try {
             // For ISBN searches, try to get the exact book
-            const book = await searchByISBN(query);
+            const book = await searchByISBN(query) as Book;
             // If successful and it returned a book, redirect to book details
             if (book) {
               navigate(`/book/${book.isbn}`);
@@ -68,7 +79,7 @@ const SearchPage = () => {
           }
           break;
         default:
-          results = await searchByTitle(query);
+          results = await searchByTitle(query) as Book[];
       }
       
       setSearchResults(Array.isArray(results) ? results : [results].filter(Boolean));
