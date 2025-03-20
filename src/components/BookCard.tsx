@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
@@ -11,6 +10,7 @@ interface BookCardProps {
   cover: string;
   reviews: any[];
   className?: string;
+  onClick?: () => void;
 }
 
 const BookCard: React.FC<BookCardProps> = ({
@@ -19,21 +19,17 @@ const BookCard: React.FC<BookCardProps> = ({
   author,
   cover,
   reviews,
-  className
+  className,
+  onClick
 }) => {
   // Calculate average rating
   const avgRating = reviews.length
     ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length
     : 0;
 
-  return (
-    <Link
-      to={`/book/${id}`}
-      className={cn(
-        'group rounded-xl overflow-hidden book-card-hover',
-        className
-      )}
-    >
+  // Create a component that can handle the click event
+  const CardContent = () => (
+    <>
       <div className="relative aspect-[3/4] overflow-hidden">
         <img
           src={cover}
@@ -59,6 +55,34 @@ const BookCard: React.FC<BookCardProps> = ({
         <h3 className="font-medium text-base mb-1 truncate">{title}</h3>
         <p className="text-sm text-muted-foreground">{author}</p>
       </div>
+    </>
+  );
+
+  // If onClick is provided, use a div with onClick instead of a Link
+  if (onClick) {
+    return (
+      <div
+        onClick={onClick}
+        className={cn(
+          'group rounded-xl overflow-hidden book-card-hover cursor-pointer',
+          className
+        )}
+      >
+        <CardContent />
+      </div>
+    );
+  }
+
+  // Otherwise, use the Link as before
+  return (
+    <Link
+      to={`/book/${id}`}
+      className={cn(
+        'group rounded-xl overflow-hidden book-card-hover',
+        className
+      )}
+    >
+      <CardContent />
     </Link>
   );
 };
