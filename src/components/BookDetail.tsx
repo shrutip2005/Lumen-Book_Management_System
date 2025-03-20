@@ -26,25 +26,35 @@ interface BookDetailProps {
 const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
   const { user, isAuthenticated } = useAuth();
   const [book, setBook] = useState<Book | null>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showReviewForm, setShowReviewForm] = useState<boolean>(false);
   const [editingReview, setEditingReview] = useState<any>(null);
 
   useEffect(() => {
-    const fetchBook = async () => {
+    const fetchBookAndReviews = async () => {
       try {
         setLoading(true);
-        const data = await getBookByISBN(bookId);
-        setBook(data as Book);
+        const bookData = await getBookByISBN(bookId);
+        setBook(bookData as Book);
+        
+        // Fetch reviews separately using the getBookReviews function
+        if (bookData) {
+          const reviewsData = await getBookReviews(bookData.id);
+          setReviews(reviewsData as any[]);
+          
+          // Update the book object with the reviews array
+          setBook(prev => prev ? { ...prev, reviews: reviewsData as any[] } : null);
+        }
       } catch (error) {
-        console.error('Error fetching book:', error);
-        toast.error('Failed to load book details');
+        console.error('Error fetching book or reviews:', error);
+        toast.error('Failed to load book details or reviews');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBook();
+    fetchBookAndReviews();
   }, [bookId]);
 
   const handleEditReview = (review: any) => {
@@ -58,10 +68,14 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
     try {
       await deleteReview(book.id, reviewId, user.id);
       
-      // Update the book in state with the review removed
+      // Update the reviews and book state
+      const updatedReviews = reviews.filter(r => r.id !== reviewId);
+      setReviews(updatedReviews);
+      
+      // Also update the book object with the filtered reviews
       setBook({
         ...book,
-        reviews: book.reviews.filter(r => r.id !== reviewId)
+        reviews: updatedReviews
       });
       
       toast.success('Review deleted successfully');
@@ -74,21 +88,24 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
   const onReviewSubmitted = (newReview: any) => {
     if (!book) return;
     
+    let updatedReviews;
+    
     // If editing, replace the existing review
     if (editingReview) {
-      setBook({
-        ...book,
-        reviews: book.reviews.map(r => 
-          r.id === newReview.id ? newReview : r
-        )
-      });
+      updatedReviews = reviews.map(r => 
+        r.id === newReview.id ? newReview : r
+      );
     } else {
       // Add new review
-      setBook({
-        ...book,
-        reviews: [...book.reviews, newReview]
-      });
+      updatedReviews = [...reviews, newReview];
     }
+    
+    // Update both the reviews array and the book object
+    setReviews(updatedReviews);
+    setBook({
+      ...book,
+      reviews: updatedReviews
+    });
     
     setShowReviewForm(false);
     setEditingReview(null);
@@ -124,8 +141,8 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
   }
 
   // Calculate average rating
-  const avgRating = book.reviews.length
-    ? book.reviews.reduce((acc, review) => acc + review.rating, 0) / book.reviews.length
+  const avgRating = reviews.length
+    ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length
     : 0;
 
   return (
@@ -135,8 +152,8 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
         <div className="w-full md:w-1/3">
           <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-lg">
             <img 
-              src={book.cover} 
-              alt={book.title} 
+              src={book?.cover} 
+              alt={book?.title} 
               className="w-full h-full object-cover"
             />
           </div>
@@ -144,8 +161,8 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
         
         {/* Book details */}
         <div className="w-full md:w-2/3">
-          <h1 className="text-3xl font-semibold mb-2">{book.title}</h1>
-          <p className="text-xl text-muted-foreground mb-4">{book.author}</p>
+          <h1 className="text-3xl font-semibold mb-2">{book?.title}</h1>
+          <p className="text-xl text-muted-foreground mb-4">{book?.author}</p>
           
           <div className="flex items-center space-x-2 mb-6">
             <div className="flex items-center space-x-1">
@@ -155,18 +172,18 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
               </span>
             </div>
             <span className="text-sm text-muted-foreground">
-              ({book.reviews.length} {book.reviews.length === 1 ? 'review' : 'reviews'})
+              ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
             </span>
           </div>
           
           <div className="flex items-center space-x-4 mb-6 text-sm text-muted-foreground">
             <div className="flex items-center space-x-1">
               <BookOpen className="h-4 w-4" />
-              <span>ISBN: {book.isbn}</span>
+              <span>ISBN: {book?.isbn}</span>
             </div>
           </div>
           
-          <p className="text-base leading-relaxed mb-8">{book.description}</p>
+          <p className="text-base leading-relaxed mb-8">{book?.description}</p>
           
           {isAuthenticated && (
             <Button 
@@ -180,7 +197,7 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
             </Button>
           )}
           
-          {showReviewForm && (
+          {showReviewForm && book && (
             <div className="mb-8 animate-slide-up">
               <ReviewForm 
                 bookId={book.id} 
@@ -197,9 +214,9 @@ const BookDetail: React.FC<BookDetailProps> = ({ bookId }) => {
       <div className="border-t border-border pt-8">
         <h2 className="text-2xl font-semibold mb-6">Reviews</h2>
         
-        {book.reviews.length > 0 ? (
+        {reviews.length > 0 ? (
           <div className="space-y-8">
-            {book.reviews.map((review) => (
+            {reviews.map((review) => (
               <div key={review.id} className="border border-border rounded-lg p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
