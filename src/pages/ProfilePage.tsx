@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getAllBooks } from '../utils/api';
-import { User, Book, LogOut } from 'lucide-react';
+import { User, Book, LogOut, Settings } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -35,7 +35,8 @@ const ProfilePage = () => {
                 bookId: book.id,
                 bookTitle: book.title,
                 bookAuthor: book.author,
-                bookCover: book.cover
+                bookCover: book.cover,
+                bookIsbn: book.isbn
               });
             }
           });
@@ -68,22 +69,32 @@ const ProfilePage = () => {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-4">
               <div>
                 <h1 className="text-3xl font-semibold mb-2 flex items-center">
-                  <User className="h-8 w-8 mr-3 text-book" />
+                  <User className="h-8 w-8 mr-3 text-primary" />
                   {user.username}
                 </h1>
                 <p className="text-muted-foreground">{user.email}</p>
               </div>
               
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  logout();
-                  navigate('/');
-                }}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/dashboard')}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    logout();
+                    navigate('/');
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
             </div>
             
             <Card className="animate-fade-in">
@@ -106,7 +117,7 @@ const ProfilePage = () => {
                         className="flex flex-col md:flex-row gap-4 p-4 border border-border rounded-lg"
                       >
                         <div className="md:w-1/4">
-                          <a href={`/book/${review.bookId}`} className="block">
+                          <a href={`/book/${review.bookIsbn}`} className="block">
                             <div className="aspect-[3/4] rounded-md overflow-hidden">
                               <img 
                                 src={review.bookCover} 
@@ -118,7 +129,7 @@ const ProfilePage = () => {
                         </div>
                         
                         <div className="md:w-3/4">
-                          <a href={`/book/${review.bookId}`} className="hover:underline">
+                          <a href={`/book/${review.bookIsbn}`} className="hover:underline">
                             <h3 className="font-medium mb-1">{review.bookTitle}</h3>
                           </a>
                           <p className="text-sm text-muted-foreground mb-3">
@@ -151,7 +162,7 @@ const ProfilePage = () => {
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => navigate(`/book/${review.bookId}`)}
+                              onClick={() => navigate(`/book/${review.bookIsbn}`)}
                             >
                               View Book
                             </Button>

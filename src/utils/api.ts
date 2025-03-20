@@ -13,7 +13,8 @@ const BOOKS_DATA = [
     reviews: [
       { id: '101', userId: 'user1', username: 'BookLover', rating: 5, comment: 'A timeless masterpiece that remains relevant today.', createdAt: '2023-01-15' },
       { id: '102', userId: 'user2', username: 'LitFan', rating: 4, comment: 'Thought-provoking and chilling. A must-read.', createdAt: '2023-02-10' }
-    ]
+    ],
+    createdBy: 'user1'
   },
   {
     id: '2',
@@ -24,7 +25,8 @@ const BOOKS_DATA = [
     cover: 'https://images.unsplash.com/photo-1618666012174-83b441c0bc76?q=80&w=500&auto=format&fit=crop',
     reviews: [
       { id: '103', userId: 'user3', username: 'FantasyReader', rating: 5, comment: 'The foundational work of modern fantasy. Incredible world-building.', createdAt: '2023-03-05' }
-    ]
+    ],
+    createdBy: 'user2'
   },
   {
     id: '3',
@@ -35,7 +37,8 @@ const BOOKS_DATA = [
     cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=500&auto=format&fit=crop',
     reviews: [
       { id: '104', userId: 'user1', username: 'BookLover', rating: 5, comment: 'A powerful story with unforgettable characters.', createdAt: '2023-04-20' }
-    ]
+    ],
+    createdBy: 'user3'
   },
   {
     id: '4',
@@ -44,7 +47,8 @@ const BOOKS_DATA = [
     author: 'J.D. Salinger',
     description: 'A novel about the teenage angst and alienation of its protagonist, Holden Caulfield.',
     cover: 'https://images.unsplash.com/photo-1476275466078-4007374efbbe?q=80&w=500&auto=format&fit=crop',
-    reviews: []
+    reviews: [],
+    createdBy: 'user1'
   },
   {
     id: '5',
@@ -55,7 +59,8 @@ const BOOKS_DATA = [
     cover: 'https://images.unsplash.com/photo-1491841573634-28140fc7ced7?q=80&w=500&auto=format&fit=crop',
     reviews: [
       { id: '105', userId: 'user2', username: 'LitFan', rating: 4, comment: 'Beautifully written with complex characters.', createdAt: '2023-05-12' }
-    ]
+    ],
+    createdBy: 'user2'
   },
   {
     id: '6',
@@ -66,7 +71,8 @@ const BOOKS_DATA = [
     cover: 'https://images.unsplash.com/photo-1510172951991-856a62a9cde1?q=80&w=500&auto=format&fit=crop',
     reviews: [
       { id: '106', userId: 'user3', username: 'FantasyReader', rating: 5, comment: 'Haunting and poetic. One of McCarthy\'s best.', createdAt: '2023-06-08' }
-    ]
+    ],
+    createdBy: 'user3'
   }
 ];
 
@@ -79,9 +85,6 @@ const USERS = [
 
 // Task 1: Get all books
 export const getAllBooks = async () => {
-  // In a real app, this would be an API call like:
-  // return axios.get('/api/books').then(response => response.data);
-  
   // Simulating network delay
   return new Promise(resolve => {
     setTimeout(() => {
@@ -279,6 +282,121 @@ export const deleteReview = async (bookId: string, reviewId: string, userId: str
   });
 };
 
+// Get books created by a user
+export const getUserBooks = async (userId: string) => {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const userBooks = BOOKS_DATA.filter(book => book.createdBy === userId);
+      resolve(userBooks);
+    }, 300);
+  });
+};
+
+// Add a new book
+export const addBook = async (bookData: {
+  title: string;
+  author: string;
+  isbn: string;
+  description: string;
+  cover: string;
+  createdBy: string;
+}) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // Check if book with ISBN already exists
+      const existingBook = BOOKS_DATA.find(book => book.isbn === bookData.isbn);
+      if (existingBook) {
+        reject(new Error('A book with this ISBN already exists'));
+        return;
+      }
+
+      const newBook = {
+        id: `${BOOKS_DATA.length + 1}`,
+        ...bookData,
+        reviews: []
+      };
+
+      BOOKS_DATA.push(newBook);
+      resolve(newBook);
+    }, 500);
+  });
+};
+
+// Update an existing book
+export const updateBook = async (
+  bookId: string,
+  userId: string,
+  bookData: {
+    title?: string;
+    author?: string;
+    isbn?: string;
+    description?: string;
+    cover?: string;
+  }
+) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const bookIndex = BOOKS_DATA.findIndex(book => book.id === bookId);
+      
+      if (bookIndex === -1) {
+        reject(new Error('Book not found'));
+        return;
+      }
+      
+      const book = BOOKS_DATA[bookIndex];
+      
+      // Check if the user owns the book
+      if (book.createdBy !== userId) {
+        reject(new Error('You can only edit your own books'));
+        return;
+      }
+      
+      // If updating ISBN, check if it would conflict with another book
+      if (bookData.isbn && bookData.isbn !== book.isbn) {
+        const existingWithIsbn = BOOKS_DATA.find(b => b.isbn === bookData.isbn && b.id !== bookId);
+        if (existingWithIsbn) {
+          reject(new Error('A book with this ISBN already exists'));
+          return;
+        }
+      }
+      
+      // Update the book
+      BOOKS_DATA[bookIndex] = {
+        ...book,
+        ...bookData
+      };
+      
+      resolve(BOOKS_DATA[bookIndex]);
+    }, 500);
+  });
+};
+
+// Delete a book
+export const deleteBook = async (bookId: string, userId: string) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const bookIndex = BOOKS_DATA.findIndex(book => book.id === bookId);
+      
+      if (bookIndex === -1) {
+        reject(new Error('Book not found'));
+        return;
+      }
+      
+      const book = BOOKS_DATA[bookIndex];
+      
+      // Check if the user owns the book
+      if (book.createdBy !== userId) {
+        reject(new Error('You can only delete your own books'));
+        return;
+      }
+      
+      // Delete the book
+      BOOKS_DATA.splice(bookIndex, 1);
+      resolve({ success: true });
+    }, 500);
+  });
+};
+
 // For Node.js methods (Tasks 10-13)
 // These would normally be implemented in a Node.js backend, but for demonstration
 // we'll include them here as they're similar to the browser functions
@@ -286,10 +404,6 @@ export const deleteReview = async (bookId: string, reviewId: string, userId: str
 // Task 10: Get all books (Async/Await)
 export const getAllBooksAsync = async () => {
   try {
-    // In a real app with Node.js backend:
-    // const response = await axios.get('https://api.example.com/books');
-    // return response.data;
-    
     return await getAllBooks();
   } catch (error) {
     console.error('Error fetching books:', error);
@@ -326,4 +440,22 @@ export const searchByTitle = async (title: string) => {
     console.error('Error searching by title:', error);
     throw error;
   }
+};
+
+// Mock function to handle image uploads (in a real app this would use a storage service)
+export const uploadImage = async (file: File): Promise<string> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // In a real app, this would upload to a server and return the URL
+      // Here we'll just return a placeholder image URL
+      const imageUrls = [
+        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=500&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1476275466078-4007374efbbe?q=80&w=500&auto=format&fit=crop', 
+        'https://images.unsplash.com/photo-1491841573634-28140fc7ced7?q=80&w=500&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1510172951991-856a62a9cde1?q=80&w=500&auto=format&fit=crop',
+      ];
+      const randomUrl = imageUrls[Math.floor(Math.random() * imageUrls.length)];
+      resolve(randomUrl);
+    }, 1000);
+  });
 };

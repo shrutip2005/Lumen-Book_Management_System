@@ -55,10 +55,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
             const book = await getBookByISBN(cleanedISBN);
             if (book) {
               navigate(`/book/${cleanedISBN}`);
+              setIsSearching(false);
               return;
             }
           } catch (error) {
-            console.log('ISBN direct lookup failed, falling back to search');
+            console.error('ISBN direct lookup failed, falling back to search:', error);
             // Continue to search page if direct lookup fails
           }
         }
@@ -68,6 +69,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       onSearch(query, searchType);
     } catch (error) {
       console.error('Search error:', error);
+      toast.error('Search failed. Please try again.');
     } finally {
       setIsSearching(false);
     }
